@@ -8,10 +8,10 @@ Backend UTS Pemrograman Web Lanjutan. Node.js Express + Mongoose (MongoDB Atlas)
 npm install
 cp .env.example .env   # isi MONGODB_URI Atlas + JWT_SECRET
 npm run seed           # data awal (vendor@mejaku.local / vendor123)
-npm run dev            # http://localhost:8000
+npm run dev            # http://localhost:8002
 ```
 
-Dokumentasi API (Swagger UI): **http://localhost:8000/api/docs**
+Dokumentasi API (Swagger UI): **http://localhost:8002/api/docs**
 
 ## Uji
 
