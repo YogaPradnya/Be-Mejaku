@@ -1,0 +1,308 @@
+openapi: 3.0.3
+info:
+  title: MejaKu API
+  description: Backend MejaKu — Node.js Express + MongoDB (Mongoose). UTS Pemrograman Web Lanjutan.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Lokal
+tags:
+  - name: Health
+  - name: Auth
+  - name: Vendor Menu
+  - name: Tables
+  - name: Orders
+  - name: Payments
+  - name: Promos
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    MenuItem:
+      type: object
+      properties:
+        _id: { type: string }
+        name: { type: string, example: Nasi Campur Bali Agung }
+        slug: { type: string }
+        description: { type: string }
+        base_price: { type: integer, example: 58000 }
+        stock: { type: integer, example: 50 }
+        image: { type: string, nullable: true, example: 'https://res.cloudinary.com/demo/image/upload/menu.png' }
+        has_spice_option: { type: boolean }
+        portions: { type: array, items: { type: object } }
+        addons: { type: array, items: { type: object } }
+        rating: { type: number }
+        rating_count: { type: integer }
+        is_available: { type: boolean }
+    Order:
+      type: object
+      properties:
+        order_number: { type: string, example: MJK-82600-AB12 }
+        table_code: { type: string, example: A12 }
+        items: { type: array, items: { type: object } }
+        subtotal: { type: integer }
+        service_fee: { type: integer }
+        tax: { type: integer }
+        discount: { type: integer }
+        total: { type: integer }
+        payments: { type: array, items: { type: object } }
+        payment_status: { type: string, enum: [pending, paid, failed, expired, cancelled] }
+        preparation_status: { type: string, enum: [received, preparing, ready, completed] }
+paths:
+  /api/v1/health:
+    get:
+      tags: [Health]
+      summary: Cek status API + koneksi DB
+      responses:
+        '200': { description: OK }
+
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Daftar akun vendor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name: { type: string }
+                email: { type: string }
+                password: { type: string }
+      responses:
+        '201': { description: Terdaftar + token JWT }
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login vendor (kredensial valid vs invalid)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, example: vendor@mejaku.local }
+                password: { type: string, example: vendor123 }
+      responses:
+        '200': { description: Login sukses + token JWT }
+        '401': { description: Email atau password salah }
+
+  /api/v1/vendor/menu:
+    get:
+      tags: [Vendor Menu]
+      summary: Daftar menu (wajib JWT)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Daftar menu }
+        '401': { description: Tanpa token JWT }
+    post:
+      tags: [Vendor Menu]
+      summary: Tambah menu (wajib JWT)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, base_price]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                base_price: { type: integer }
+                stock: { type: integer }
+                image: { type: string }
+      responses:
+        '201': { description: Menu dibuat }
+        '401': { description: Tanpa token JWT }
+
+  /api/v1/vendor/menu/{id}:
+    get:
+      tags: [Vendor Menu]
+      summary: Detail menu (wajib JWT)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Detail menu }
+        '404': { description: Tidak ditemukan }
+    put:
+      tags: [Vendor Menu]
+      summary: Ubah menu (wajib JWT)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MenuItem' }
+      responses:
+        '200': { description: Menu diperbarui }
+    delete:
+      tags: [Vendor Menu]
+      summary: Nonaktifkan menu / soft delete (wajib JWT)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Menu dinonaktifkan }
+
+  /api/v1/tables:
+    get:
+      tags: [Tables]
+      summary: Daftar meja aktif
+      responses:
+        '200': { description: Daftar meja }
+
+  /api/v1/tables/{code}:
+    get:
+      tags: [Tables]
+      summary: Validasi meja dari QR
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: { type: string, example: A12 }
+      responses:
+        '200': { description: Meja valid }
+        '404': { description: Meja tidak ditemukan }
+
+  /api/v1/orders/checkout:
+    post:
+      tags: [Orders]
+      summary: Checkout + split-billing (total payments wajib pas dengan total)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [table_code, items, payments]
+              properties:
+                table_code: { type: string, example: A12 }
+                notes: { type: string }
+                promo_code: { type: string, example: HEMAT5K }
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [menu_item_id, quantity]
+                    properties:
+                      menu_item_id: { type: string }
+                      quantity: { type: integer, example: 1 }
+                      portion: { type: string, example: Jumbo }
+                      addons: { type: array, items: { type: string }, example: [Ekstra Sambal Matah] }
+                payments:
+                  type: array
+                  description: Gabungan metode; jumlah amount wajib sama dengan total
+                  items:
+                    type: object
+                    required: [method, amount]
+                    properties:
+                      method: { type: string, enum: [cash, qris, transfer] }
+                      amount: { type: integer, example: 40000 }
+      responses:
+        '201': { description: Order dibuat }
+        '422': { description: Total split-billing tidak pas / stok kurang / porsi tidak ada }
+
+  /api/v1/orders/{orderNumber}:
+    get:
+      tags: [Orders]
+      summary: Detail pesanan
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Detail order }
+        '404': { description: Tidak ditemukan }
+
+  /api/v1/orders/{orderNumber}/status:
+    get:
+      tags: [Orders]
+      summary: Status bayar + sisa tagihan
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Status order }
+
+  /api/v1/orders/{orderNumber}/payments:
+    post:
+      tags: [Payments]
+      summary: Catat pembayaran susulan (uang diterima)
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [method, amount]
+              properties:
+                method: { type: string, enum: [cash, qris, transfer] }
+                amount: { type: integer }
+      responses:
+        '201': { description: Pembayaran dicatat }
+        '404': { description: Order tidak ditemukan }
+
+  /api/v1/orders/{orderNumber}/payments/status:
+    get:
+      tags: [Payments]
+      summary: Ringkasan pembayaran (total, sudah bayar, sisa)
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Ringkasan pembayaran }
+
+  /api/v1/promos:
+    get:
+      tags: [Promos]
+      summary: Daftar promo aktif
+      responses:
+        '200': { description: Daftar promo }
+
+  /api/v1/promos/validate:
+    post:
+      tags: [Promos]
+      summary: Validasi kode promo terhadap subtotal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, example: HEMAT5K }
+                subtotal: { type: integer, example: 81000 }
+      responses:
+        '200': { description: Hasil validasi + nominal diskon }
