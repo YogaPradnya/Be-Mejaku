@@ -1,0 +1,766 @@
+openapi: 3.0.3
+info:
+  title: MejaKu API (Laravel)
+  description: Backend MejaKu — Laravel + SQLite. Single merchant (Warung Bali Dwi). Auth JWT Bearer untuk area admin.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Lokal (php artisan serve)
+tags:
+  - name: Menu Publik
+  - name: Meja
+  - name: Order
+  - name: Payment
+  - name: Midtrans
+  - name: Promo
+  - name: Chat
+  - name: Admin Auth
+  - name: Admin Order
+  - name: Admin Katalog
+  - name: Admin Lainnya
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    MenuListItem:
+      type: object
+      properties:
+        id: { type: integer }
+        merchant: { type: object, properties: { id: { type: integer }, name: { type: string } } }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        base_price: { type: integer }
+        rating: { type: number }
+        rating_count: { type: integer }
+        image: { type: string, nullable: true }
+    OrderDetail:
+      type: object
+      properties:
+        order_number: { type: string }
+        table: { type: object, nullable: true }
+        items: { type: array, items: { type: object } }
+        subtotal: { type: integer }
+        service_fee: { type: integer }
+        tax: { type: integer }
+        discount: { type: integer }
+        total: { type: integer }
+        promo_code: { type: string, nullable: true }
+        payment_status: { type: string }
+        preparation_status: { type: string }
+        payment: { type: object, nullable: true }
+paths:
+  /api/menu:
+    get:
+      tags: [Menu Publik]
+      summary: Daftar menu tersedia
+      responses:
+        '200': { description: Daftar menu }
+  /api/menu/{slug}:
+    get:
+      tags: [Menu Publik]
+      summary: Detail menu (porsi, addon, level pedas)
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Detail menu }
+        '404': { description: Tidak ditemukan }
+  /api/menu/{id}/rate:
+    post:
+      tags: [Menu Publik]
+      summary: Nilai menu (1-5, opsional kaitkan order lunas)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                review: { type: string }
+                customer_name: { type: string }
+                order_number: { type: string }
+      responses:
+        '201': { description: Rating tersimpan }
+        '422': { description: Order tidak lunas / tidak berisi menu }
+  /api/menu/{id}/reviews:
+    get:
+      tags: [Menu Publik]
+      summary: Ulasan menu (paginasi)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: per_page
+          schema: { type: integer }
+      responses:
+        '200': { description: Daftar ulasan }
+  /api/merchants/{id}:
+    get:
+      tags: [Menu Publik]
+      summary: Info merchant + daftar menu ringkas
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Detail merchant }
+  /api/spice-levels:
+    get:
+      tags: [Menu Publik]
+      summary: Daftar level pedas global
+      responses:
+        '200': { description: Daftar level pedas }
+  /api/tables:
+    get:
+      tags: [Meja]
+      summary: Daftar meja aktif
+      responses:
+        '200': { description: Daftar meja }
+  /api/tables/{code}:
+    get:
+      tags: [Meja]
+      summary: Validasi meja dari QR
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: { type: string, example: A12 }
+      responses:
+        '200': { description: Meja valid }
+        '404': { description: Kode salah / meja nonaktif }
+  /api/orders:
+    post:
+      tags: [Order]
+      summary: Buat pesanan (hitung server-side, potong stok, anti-oversell)
+      parameters:
+        - in: header
+          name: X-Idempotency-Key
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [table_code, items]
+              properties:
+                table_code: { type: string, example: A12 }
+                notes: { type: string }
+                promo_code: { type: string }
+                idempotency_key: { type: string }
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [menu_item_id, quantity]
+                    properties:
+                      menu_item_id: { type: integer }
+                      portion_id: { type: integer }
+                      spice_level_id: { type: integer }
+                      addon_ids: { type: array, items: { type: integer } }
+                      quantity: { type: integer, minimum: 1 }
+      responses:
+        '201': { description: Pesanan dibuat }
+        '200': { description: Idempoten — pesanan sudah ada }
+        '422': { description: Stok kurang / menu nonaktif }
+  /api/orders/{orderNumber}:
+    get:
+      tags: [Order]
+      summary: Detail pesanan + auto-sinkron Midtrans (?fresh=1 paksa sinkron)
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+        - in: query
+          name: fresh
+          schema: { type: boolean }
+      responses:
+        '200': { description: Detail order }
+        '404': { description: Tidak ditemukan }
+  /api/orders/{orderNumber}/status:
+    patch:
+      tags: [Order]
+      summary: Update status dapur (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [preparation_status]
+              properties:
+                preparation_status: { type: string, enum: [received, preparing, ready, completed] }
+      responses:
+        '200': { description: Status diperbarui }
+  /api/payments/{orderNumber}:
+    post:
+      tags: [Payment]
+      summary: Buat pembayaran (Snap token / charge langsung QRIS & VA / kasir)
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [method]
+              properties:
+                method: { type: string, enum: [qris, bank_transfer, e_wallet, midtrans, cashier] }
+                channel: { type: string, enum: [qris, va] }
+                bank: { type: string, enum: [bca, bri, bni, permata] }
+      responses:
+        '201': { description: Tagihan dibuat (snap_token / qr_data / va_number) }
+  /api/payments/{orderNumber}/status:
+    get:
+      tags: [Payment]
+      summary: Cek status + sinkron Midtrans (tanpa throttle)
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Status pembayaran }
+  /api/payments/{orderNumber}/simulate:
+    post:
+      tags: [Payment]
+      summary: Simulasi bayar/gagal/expired (mode demo)
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [pay, fail, expire] }
+      responses:
+        '200': { description: Simulasi diterapkan }
+        '403': { description: Hanya mode demo }
+  /api/payments/finish:
+    get:
+      tags: [Payment]
+      summary: Landing pasca-Snap
+      responses:
+        '200': { description: Halaman finish }
+  /api/midtrans/notification:
+    post:
+      tags: [Midtrans]
+      summary: Webhook Midtrans (verifikasi SHA512, butuh URL publik)
+      responses:
+        '200': { description: Notifikasi diproses }
+        '400': { description: Signature tidak valid }
+  /api/promos:
+    get:
+      tags: [Promo]
+      summary: Daftar promo aktif
+      responses:
+        '200': { description: Daftar promo }
+  /api/promo/validate:
+    post:
+      tags: [Promo]
+      summary: Validasi kode promo terhadap subtotal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string }
+                subtotal: { type: integer }
+      responses:
+        '200': { description: Hasil validasi }
+  /api/chat:
+    post:
+      tags: [Chat]
+      summary: Chatbot AI (Groq)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string }
+                history: { type: array, items: { type: object }, maxItems: 20 }
+      responses:
+        '200': { description: Balasan AI }
+        '503': { description: Groq belum dikonfigurasi }
+  /api/chat/stream:
+    post:
+      tags: [Chat]
+      summary: Chatbot AI streaming (SSE)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string }
+      responses:
+        '200': { description: Stream teks }
+  /api/admin/auth/login:
+    post:
+      tags: [Admin Auth]
+      summary: Login admin (JWT)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, example: admin@mejaku.local }
+                password: { type: string, example: admin123 }
+      responses:
+        '200': { description: Token JWT }
+        '401': { description: Kredensial salah }
+  /api/admin/auth/logout:
+    post:
+      tags: [Admin Auth]
+      summary: Logout (invalidasi token)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Berhasil keluar }
+  /api/admin/auth/me:
+    get:
+      tags: [Admin Auth]
+      summary: Profil admin aktif
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Profil }
+  /api/admin/stats:
+    get:
+      tags: [Admin Lainnya]
+      summary: Statistik dashboard (?date=YYYY-MM-DD)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: date
+          schema: { type: string }
+      responses:
+        '200': { description: Metrik + top items }
+  /api/admin/store/status:
+    get:
+      tags: [Admin Lainnya]
+      summary: Status buka/tutup toko
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: is_open }
+    put:
+      tags: [Admin Lainnya]
+      summary: Ubah status toko
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [is_open]
+              properties:
+                is_open: { type: boolean }
+      responses:
+        '200': { description: Status tersimpan }
+  /api/admin/payments:
+    get:
+      tags: [Admin Lainnya]
+      summary: Rekap pembayaran (?status,method,date,search)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Rekap + ringkasan lunas }
+  /api/admin/orders:
+    get:
+      tags: [Admin Order]
+      summary: Daftar pesanan (filter status, search, paginasi)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: payment_status
+          schema: { type: string }
+        - in: query
+          name: preparation_status
+          schema: { type: string }
+        - in: query
+          name: search
+          schema: { type: string }
+      responses:
+        '200': { description: Daftar order }
+  /api/admin/orders/{orderNumber}:
+    get:
+      tags: [Admin Order]
+      summary: Detail pesanan (?fresh=1 paksa sinkron)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Detail order }
+  /api/admin/orders/{orderNumber}/preparation:
+    patch:
+      tags: [Admin Order]
+      summary: Update status dapur
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [preparation_status]
+              properties:
+                preparation_status: { type: string, enum: [received, preparing, ready, completed] }
+      responses:
+        '200': { description: Diperbarui }
+  /api/admin/orders/{orderNumber}/payment:
+    patch:
+      tags: [Admin Order]
+      summary: Tandai lunas manual (kasir tunai)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [payment_status]
+              properties:
+                payment_status: { type: string, enum: [pending, checking, paid, failed, expired, cancelled] }
+      responses:
+        '200': { description: Diperbarui }
+  /api/admin/orders/{orderNumber}/cancel:
+    post:
+      tags: [Admin Order]
+      summary: Batalkan pesanan + kembalikan stok
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Dibatalkan }
+        '422': { description: Sudah lunas }
+  /api/admin/tables:
+    get:
+      tags: [Admin Katalog]
+      summary: Daftar meja
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Daftar meja }
+    post:
+      tags: [Admin Katalog]
+      summary: Tambah meja (kode unik, otomatis uppercase)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, floor]
+              properties:
+                code: { type: string, example: A12 }
+                floor: { type: string }
+      responses:
+        '201': { description: Meja dibuat }
+  /api/admin/tables/{id}:
+    get:
+      tags: [Admin Katalog]
+      summary: Detail meja
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Detail meja }
+    put:
+      tags: [Admin Katalog]
+      summary: Ubah meja
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Diperbarui }
+    delete:
+      tags: [Admin Katalog]
+      summary: Hapus meja (ditolak bila ada order aktif)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Dihapus }
+        '409': { description: Ada pesanan aktif }
+  /api/admin/tables/{id}/toggle:
+    patch:
+      tags: [Admin Katalog]
+      summary: Aktif/nonaktif meja
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Status diubah }
+  /api/admin/promos:
+    get:
+      tags: [Admin Katalog]
+      summary: Daftar promo
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Daftar promo }
+    post:
+      tags: [Admin Katalog]
+      summary: Tambah promo (percentage 1-100 / fixed)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, type, value]
+              properties:
+                code: { type: string }
+                type: { type: string, enum: [percentage, fixed] }
+                value: { type: integer }
+                min_order: { type: integer }
+                max_discount: { type: integer }
+                valid_from: { type: string, format: date }
+                valid_until: { type: string, format: date }
+                is_active: { type: boolean }
+      responses:
+        '201': { description: Promo dibuat }
+  /api/admin/promos/{id}:
+    get:
+      tags: [Admin Katalog]
+      summary: Detail promo
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Detail promo }
+    put:
+      tags: [Admin Katalog]
+      summary: Ubah promo
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Diperbarui }
+    delete:
+      tags: [Admin Katalog]
+      summary: Hapus promo permanen
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Dihapus }
+  /api/admin/menu:
+    get:
+      tags: [Admin Katalog]
+      summary: Daftar menu (?search,is_available,merchant_id,per_page)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Daftar menu + meta }
+    post:
+      tags: [Admin Katalog]
+      summary: Tambah menu (merchant otomatis = satu-satunya)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, base_price]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                base_price: { type: integer }
+                stock: { type: integer }
+                image: { type: string, format: uri }
+                has_spice_option: { type: boolean }
+                portions: { type: array, items: { type: object } }
+                addons: { type: array, items: { type: object } }
+      responses:
+        '201': { description: Menu dibuat }
+  /api/admin/menu/upload-image:
+    post:
+      tags: [Admin Katalog]
+      summary: Upload foto menu ke Cloudinary (multipart)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image: { type: string, format: binary }
+      responses:
+        '200': { description: '{ success, data: { url, public_id } }' }
+        '503': { description: Cloudinary belum dikonfigurasi }
+  /api/admin/menu/{id}:
+    get:
+      tags: [Admin Katalog]
+      summary: Detail menu admin
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Detail menu }
+    put:
+      tags: [Admin Katalog]
+      summary: Ubah menu (portions/addons dikirim = replace penuh)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Diperbarui }
+    delete:
+      tags: [Admin Katalog]
+      summary: Soft delete (is_available=false); ?force=1 permanen
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Dinonaktifkan }
+  /api/admin/menu/{id}/toggle:
+    patch:
+      tags: [Admin Katalog]
+      summary: Tampilkan/sembunyikan menu
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Status diubah }
+  /api/admin/merchants:
+    get:
+      tags: [Admin Katalog]
+      summary: Daftar merchant (konsep 1 merchant)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Daftar merchant }
+    post:
+      tags: [Admin Katalog]
+      summary: Tambah merchant (ditolak 409 bila sudah ada 1)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: Dibuat }
+        '409': { description: Sudah ada merchant }
+  /api/admin/merchants/{id}:
+    get:
+      tags: [Admin Katalog]
+      summary: Detail merchant
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Detail merchant }
+    put:
+      tags: [Admin Katalog]
+      summary: Ubah merchant
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Diperbarui }
+    delete:
+      tags: [Admin Katalog]
+      summary: Hapus merchant (?force=1 bila masih punya menu)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Dihapus }
+        '409': { description: Masih punya menu / satu-satunya }

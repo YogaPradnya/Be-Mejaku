@@ -1,4 +1,25 @@
-node_modules/
-.env
+# Laravel backend
+backend/vendor/
+backend/.env
+backend/.env.backup
+backend/database/*.sqlite
+backend/database/*.sqlite-journal
+backend/storage/logs/*.log
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+
+# Dashboard Vue
+dashboard/node_modules/
+dashboard/dist/
+
+# Umum
+.DS_Store
+.idea/
+.vscode/
+*.log
 coverage/
-dist/
+
+# lokal, jangan push
+.env
+SISA_TUGAS_UTS.txt
