@@ -6,7 +6,6 @@ use App\Models\MenuItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class AdminAuthMerchantTest extends TestCase
@@ -64,7 +63,7 @@ class AdminAuthMerchantTest extends TestCase
 
     public function test_merchant_crud(): void
     {
-        Sanctum::actingAs(User::factory()->create());
+        $this->actingAsJwt(User::factory()->create());
 
         // Konsep single-merchant: merchant ke-2 ditolak 409.
         $this->postJson('/api/admin/merchants', [
@@ -84,7 +83,7 @@ class AdminAuthMerchantTest extends TestCase
 
     public function test_admin_order_show(): void
     {
-        Sanctum::actingAs(User::factory()->create());
+        $this->actingAsJwt(User::factory()->create());
 
         $menuItem = MenuItem::first();
         $orderNumber = $this->postJson('/api/orders', [

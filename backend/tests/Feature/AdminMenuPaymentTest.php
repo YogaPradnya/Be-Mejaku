@@ -14,7 +14,7 @@ class AdminMenuPaymentTest extends TestCase
     {
         parent::setUp();
         $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\DemoDataSeeder']);
-        \Laravel\Sanctum\Sanctum::actingAs(\App\Models\User::factory()->create());
+        $this->actingAsJwt(\App\Models\User::factory()->create());
     }
 
     public function test_menu_crud_with_stock_portions_addons(): void

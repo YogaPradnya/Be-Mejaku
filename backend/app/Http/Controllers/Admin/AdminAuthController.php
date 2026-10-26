@@ -3,16 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 
 class AdminAuthController extends Controller
 {
     /**
-     * POST /api/admin/auth/login (publik)
+     * POST /api/admin/auth/login (publik) — menerbitkan JWT.
      */
     public function login(Request $request): JsonResponse
     {
@@ -21,16 +18,14 @@ class AdminAuthController extends Controller
             'password' => 'required|string|max:255',
         ]);
 
-        $user = User::where('email', $validated['email'])->first();
-
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (!$token = auth('api')->attempt($validated)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Email atau password salah.',
             ], 401);
         }
 
-        $token = $user->createToken('admin-dashboard')->plainTextToken;
+        $user = auth('api')->user();
 
         return response()->json([
             'success' => true,
@@ -43,16 +38,17 @@ class AdminAuthController extends Controller
                 ],
                 'token' => $token,
                 'token_type' => 'Bearer',
+                'expires_in' => auth('api')->factory()->getTTL() * 60,
             ],
         ]);
     }
 
     /**
-     * POST /api/admin/auth/logout (auth:sanctum)
+     * POST /api/admin/auth/logout (auth:api) — invalidasi JWT aktif.
      */
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->tokens()->delete();
+        auth('api')->logout();
 
         return response()->json([
             'success' => true,
@@ -61,11 +57,11 @@ class AdminAuthController extends Controller
     }
 
     /**
-     * GET /api/admin/auth/me (auth:sanctum)
+     * GET /api/admin/auth/me (auth:api)
      */
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = auth('api')->user();
 
         return response()->json([
             'success' => true,

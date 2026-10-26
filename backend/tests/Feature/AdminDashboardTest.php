@@ -14,7 +14,7 @@ class AdminDashboardTest extends TestCase
     {
         parent::setUp();
         $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\DemoDataSeeder']);
-        \Laravel\Sanctum\Sanctum::actingAs(\App\Models\User::factory()->create());
+        $this->actingAsJwt(\App\Models\User::factory()->create());
     }
 
     private function createOrder(array $overrides = []): string

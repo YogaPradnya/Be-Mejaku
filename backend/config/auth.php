@@ -42,6 +42,12 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // JWT untuk seluruh area admin API (menggantikan Sanctum).
+        'api' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
+        ],
     ],
 
     /*

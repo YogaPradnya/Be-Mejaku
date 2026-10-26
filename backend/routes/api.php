@@ -52,7 +52,7 @@ Route::post('/orders', [OrderController::class, 'store'])
 Route::get('/orders/{orderNumber}', [OrderController::class, 'show']);
 // Update status dapur hanya untuk admin (dulu publik/demo).
 Route::patch('/orders/{orderNumber}/status', [OrderController::class, 'updateStatus'])
-    ->middleware('auth:sanctum');
+    ->middleware('auth:api');
 
 // =============================================
 // Pembayaran (rate limit: payment)
@@ -79,9 +79,9 @@ Route::post('/promo/validate', [PromoController::class, 'validate']);
 Route::post('/admin/auth/login', [AdminAuthController::class, 'login']);
 
 // =============================================
-// Admin Dashboard (auth:sanctum)
+// Admin Dashboard (auth:api/JWT)
 // =============================================
-Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+Route::prefix('admin')->middleware('auth:api')->group(function () {
     Route::post('/auth/logout', [AdminAuthController::class, 'logout']);
     Route::get('/auth/me', [AdminAuthController::class, 'me']);
 

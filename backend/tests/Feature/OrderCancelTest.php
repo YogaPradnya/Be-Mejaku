@@ -20,7 +20,7 @@ class OrderCancelTest extends TestCase
             ['email' => 'admin@mejaku.local'],
             ['name' => 'Administrator', 'password' => bcrypt('admin123')]
         );
-        $this->token = $admin->createToken('test')->plainTextToken;
+        $this->token = \PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth::fromUser($admin);
     }
 
     private function makeOrder(int $qty = 2): string

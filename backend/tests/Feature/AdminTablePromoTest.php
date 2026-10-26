@@ -14,7 +14,7 @@ class AdminTablePromoTest extends TestCase
     {
         parent::setUp();
         $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\DemoDataSeeder']);
-        \Laravel\Sanctum\Sanctum::actingAs(\App\Models\User::factory()->create());
+        $this->actingAsJwt(\App\Models\User::factory()->create());
     }
 
     public function test_table_crud_and_delete_guard(): void
