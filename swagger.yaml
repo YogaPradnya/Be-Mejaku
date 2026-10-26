@@ -4,7 +4,7 @@ info:
   description: Backend MejaKu — Node.js Express + MongoDB (Mongoose). UTS Pemrograman Web Lanjutan.
   version: 1.0.0
 servers:
-  - url: http://localhost:8000
+  - url: http://localhost:8002
     description: Lokal
 tags:
   - name: Health
