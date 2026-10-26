@@ -1,25 +1,24 @@
-# Laravel backend
+# Dependencies
+**/node_modules/
 backend/vendor/
-backend/.env
-backend/.env.backup
-backend/database/*.sqlite
-backend/database/*.sqlite-journal
-backend/storage/logs/*.log
-backend/storage/framework/cache/*
-backend/storage/framework/sessions/*
-backend/storage/framework/views/*
 
-# Dashboard Vue
-dashboard/node_modules/
-dashboard/dist/
+# Env & secrets (jangan commit kunci asli)
+**/.env
+**/.env.backup
+**/.env.production
 
-# Umum
+# Laravel
+backend/.phpunit.result.cache
+backend/.phpunit.cache
+backend/storage/*.key
+backend/storage/pail
+backend/public/build
+backend/public/hot
+backend/public/storage
+
+# OS / editor
 .DS_Store
-.idea/
-.vscode/
+Thumbs.db
+/.vscode/
+/.idea/
 *.log
-coverage/
-
-# lokal, jangan push
-.env
-SISA_TUGAS_UTS.txt

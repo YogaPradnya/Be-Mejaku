@@ -1,0 +1,444 @@
+# PRD MejaKu
+Product Requirements Document
+Versi: 1.0
+Status: Spesifikasi MVP berdasarkan lima layar desain
+
+## 1. Ringkasan Produk
+
+MejaKu adalah website pemesanan makanan di pujasera melalui kode QR meja.
+
+Pelanggan dapat membuka menu tanpa memasang aplikasi, menyesuaikan makanan,
+memeriksa pesanan, membayar, dan memantau status penyiapan makanan hingga
+diantarkan ke meja.
+
+Dokumen ini menjelaskan kebutuhan produk.
+Gunakan design.md dan screenshot Figma sebagai acuan visual.
+
+## 2. Masalah yang Diselesaikan
+
+- Pelanggan harus mengantre untuk memesan dan membayar.
+- Pelanggan harus menunggu menu fisik atau memanggil pramusaji.
+- Preferensi makanan berpotensi tidak tersampaikan dengan jelas.
+- Pelanggan tidak mengetahui status pesanan setelah membayar.
+- Identitas meja dan informasi pesanan dapat tertukar.
+
+## 3. Tujuan Produk
+
+1. Mempermudah pemesanan langsung dari meja.
+2. Memastikan konfigurasi makanan dan jumlah pesanan konsisten.
+3. Menampilkan rincian biaya sebelum pelanggan membayar.
+4. Memisahkan status pembayaran dari status penyiapan makanan.
+5. Menampilkan lokasi meja dan perkembangan pesanan dengan jelas.
+
+### Indikator keberhasilan yang perlu diukur
+
+- Persentase pengguna yang menyelesaikan checkout.
+- Persentase pembayaran berhasil.
+- Waktu dari pemilihan makanan sampai pembuatan pesanan.
+- Frekuensi kegagalan atau duplikasi pembuatan pesanan.
+- Frekuensi ketidaksesuaian harga, konfigurasi, atau meja.
+- Penggunaan halaman status pesanan.
+
+Target numerik ditetapkan setelah baseline dan kebutuhan bisnis tersedia.
+Jangan mengarang hasil atau target yang seolah sudah disepakati.
+
+## 4. Target Pengguna
+
+### Pengguna utama
+Pelanggan pujasera yang memiliki ponsel dan ingin memesan dari meja.
+
+### Pengguna sekunder
+- Pramusaji yang mengantarkan makanan.
+- Mitra kuliner yang menyiapkan pesanan.
+
+Antarmuka staf dan mitra tidak termasuk dalam lima layar MVP ini.
+
+## 5. Ruang Lingkup MVP
+
+### Termasuk
+1. Landing page MejaKu.
+2. Halaman detail makanan.
+3. Checkout.
+4. Pembayaran.
+5. Konfirmasi dan status pesanan.
+
+Kemampuan utama:
+- Menyesuaikan porsi, tingkat pedas, dan pelengkap.
+- Mengubah jumlah makanan.
+- Menambahkan catatan.
+- Menampilkan identitas meja.
+- Menghitung dan menampilkan rincian biaya.
+- Membuat pesanan.
+- Menampilkan instruksi dan status pembayaran.
+- Menampilkan status penyiapan pesanan.
+- Tampilan responsive dan aksesibilitas dasar.
+
+### Tidak termasuk
+- Dashboard dapur, merchant, dan admin.
+- Sistem registrasi/login lengkap.
+- Pengelolaan katalog oleh merchant.
+- Split bill.
+- Penerjemahan otomatis.
+- Loyalty dan membership.
+- Pengantaran ke alamat pelanggan secara penuh.
+- Riwayat pesanan lengkap.
+- Refund otomatis.
+- Payment gateway produksi tanpa kredensial dan kontrak API.
+
+Fitur tersebut tidak boleh dianggap sudah tersedia hanya karena disebut
+dalam copy pemasaran atau tombol referensi.
+
+## 6. Struktur Halaman
+
+Route berikut merupakan rekomendasi implementasi:
+
+| Halaman | Route |
+|---|---|
+| Landing | / |
+| Detail makanan | /menu/nasi-campur-bali-agung |
+| Checkout | /checkout |
+| Pembayaran | /payment/:orderId |
+| Konfirmasi | /orders/:orderId/confirmation |
+
+Detail visual, copy, font, warna, dan layout mengikuti design.md.
+
+## 7. Alur Pengguna
+
+1. Pelanggan membuka MejaKu.
+2. Pelanggan memiliki konteks meja dari tautan QR.
+3. Pelanggan memilih makanan.
+4. Pelanggan memilih porsi, pedas, pelengkap, dan jumlah.
+5. Pelanggan menambahkan makanan ke pesanan.
+6. Pelanggan memeriksa konfigurasi dan meja di checkout.
+7. Pelanggan menambahkan catatan jika diperlukan.
+8. Pelanggan membuat pesanan.
+9. Pelanggan menyelesaikan pembayaran.
+10. Sistem memverifikasi pembayaran.
+11. Sistem menampilkan konfirmasi dan status penyiapan.
+12. Makanan disiapkan dan diantarkan ke meja yang sesuai.
+
+Untuk demo, konteks meja boleh menggunakan fixture.
+Untuk produksi, identitas meja harus divalidasi oleh backend.
+
+## 8. Kebutuhan Fungsional
+
+### FR-01 — Landing Page
+Prioritas: P0
+
+- Menampilkan seluruh section berdasarkan desain.
+- Navigation menuju section yang sesuai.
+- CTA pemesanan memiliki tujuan yang jelas.
+- CTA mitra/bantuan di luar scope menampilkan informasi yang jujur.
+- Tidak boleh ada tombol yang tidak memberikan respons.
+
+Acceptance:
+- Hero, cara kerja, featured menu, keuntungan, app preview, dan footer tersedia.
+- Pengguna dapat menuju alur pemesanan.
+
+### FR-02 — Detail Makanan
+Prioritas: P0
+
+- Menampilkan merchant, nama, deskripsi, rating contoh, dan harga.
+- Menampilkan gallery dan thumbnail.
+- Porsi hanya dapat dipilih satu.
+- Tingkat pedas hanya dapat dipilih satu.
+- Pelengkap dapat dipilih lebih dari satu.
+- Quantity minimal 1.
+- Harga diperbarui saat konfigurasi berubah.
+- Konfigurasi tersimpan saat menuju checkout.
+
+Acceptance:
+- State awal sesuai referensi menghasilkan Rp 63.000.
+- Mengganti porsi atau pelengkap memperbarui harga.
+- Quantity tidak dapat menjadi nol atau negatif.
+
+### FR-03 — Checkout
+Prioritas: P0
+
+- Menampilkan makanan dan konfigurasi yang dipilih.
+- Quantity dapat diubah.
+- Pengguna dapat kembali untuk mengubah pilihan.
+- Menampilkan meja dan lokasi pujasera.
+- Menyediakan catatan maksimal 150 karakter.
+- Menampilkan subtotal, service fee, pajak, dan total.
+- Mencegah pembuatan pesanan ganda.
+- Menampilkan loading dan error ketika pembuatan pesanan gagal.
+
+Acceptance:
+- Konfigurasi sama dengan halaman detail.
+- Catatan tidak melebihi 150 karakter.
+- Satu aksi submit tidak menghasilkan beberapa order.
+- Total default Rp 72.600.
+
+### FR-04 — Pilihan Penerimaan
+Prioritas: P0 untuk santap di meja
+
+- Santap di meja menjadi pilihan awal.
+- Identitas meja terlihat sebelum pembayaran.
+- Opsi pengantaran mengikuti tampilan referensi.
+
+Untuk MVP tanpa implementasi delivery:
+- Opsi pengantaran harus memiliki penjelasan bahwa belum tersedia.
+- Jangan meminta pembayaran delivery tanpa alamat dan ongkir tervalidasi.
+- Jangan mengarang biaya pengantaran.
+
+### FR-05 — Promo
+Prioritas: P1
+
+- Input promo memiliki state kosong, loading, valid, dan invalid.
+- Promo valid harus berasal dari aturan yang dikonfirmasi atau backend.
+- Diskon harus muncul dalam ringkasan sebelum pembayaran.
+
+Untuk demo tanpa aturan promo:
+- Berikan feedback bahwa promo belum tersedia.
+- Jangan otomatis memberikan diskon palsu.
+
+### FR-06 — Pembayaran
+Prioritas: P0 untuk QRIS
+
+- Menampilkan nomor pesanan dan rincian biaya.
+- Menampilkan QRIS, kode pembayaran, dan batas waktu.
+- Kode pembayaran dapat disalin.
+- Tombol cek pembayaran memeriksa status transaksi.
+- Status expired memiliki pesan dan langkah lanjutan.
+- Status pembayaran tetap konsisten setelah refresh.
+
+Metode yang terlihat dalam desain:
+- QRIS.
+- Transfer Bank / VA.
+- Dompet Digital.
+
+QRIS merupakan skenario utama yang memiliki panel desain lengkap.
+Panel Bank/VA dan Dompet Digital membutuhkan spesifikasi/integrasi tambahan.
+
+Acceptance:
+- Klik "Saya Sudah Bayar" tidak otomatis membuktikan pembayaran produksi.
+- QR dan nominal produksi berasal dari backend/gateway.
+- Metode yang belum tersedia menampilkan feedback, bukan data rekening palsu.
+
+### FR-07 — Konfirmasi dan Status Pesanan
+Prioritas: P0
+
+- Menampilkan nomor pesanan.
+- Menampilkan identitas meja.
+- Menampilkan ringkasan biaya terbayar.
+- Menampilkan metode pembayaran.
+- Menampilkan timeline empat tahap.
+- Membedakan tahap selesai, aktif, dan belum dimulai.
+
+Tahap:
+1. Pesanan Diterima & Terbayar.
+2. Sedang Disiapkan di Dapur.
+3. Siap Disajikan / Dikirim.
+4. Pesanan Selesai.
+
+Acceptance:
+- Snapshot awal sesuai referensi berada pada tahap kedua.
+- Konfirmasi produksi hanya tersedia setelah pembayaran terverifikasi.
+- Status live berasal dari backend; demo diberi label yang jelas.
+
+### FR-08 — Persistensi dan Pemulihan
+Prioritas: P0
+
+- Pilihan makanan dan quantity tidak hilang saat navigasi.
+- Order demo dapat dipulihkan setelah refresh.
+- Route payment/confirmation tanpa order menampilkan empty state atau redirect.
+- Jangan menyimpan PIN, OTP, atau data rahasia pembayaran di storage lokal.
+
+## 9. Data Contoh
+
+Merchant: Warung Bali Dwi
+Makanan: Nasi Campur Bali Agung
+Harga dasar: Rp 58.000
+
+Porsi:
+- Biasa: + Rp 0
+- Jumbo: + Rp 15.000
+
+Pelengkap:
+- Ekstra Sambal Matah: + Rp 5.000
+- Sate Lilit Tuna: + Rp 8.000
+- Kulit Ayam Bali Renyah: + Rp 12.000
+
+Konfigurasi awal:
+- Porsi Biasa
+- Pedas Sedang
+- Ekstra Sambal Matah
+- Quantity 1
+
+Meja:
+- A12
+- Lantai 2
+- Jakarta Culinary Hall
+- Pujasera Utama Blok B
+
+Nomor pesanan contoh: MJK-72600-BA
+Kode pembayaran contoh: MJK72600BA
+
+Identitas tersebut adalah fixture, bukan format ID produksi yang diwajibkan.
+
+## 10. Perhitungan Harga
+
+unitPrice = basePrice + portionSurcharge + sum(addonPrices)
+subtotal = unitPrice × quantity
+tax = round((subtotal + serviceFee) × 0.10)
+total = subtotal + serviceFee + tax
+
+Contoh referensi:
+- Harga dasar: 58.000
+- Ekstra sambal: 5.000
+- Subtotal: 63.000
+- Service fee: 3.000
+- Pajak: 6.600
+- Total: 72.600
+
+Aturan ini mereproduksi contoh desain.
+Kebijakan pajak, diskon, ongkir, dan service fee produksi perlu dikonfirmasi.
+
+Untuk produksi:
+- Backend menghitung ulang harga dari katalog dan aturan resmi.
+- Backend tidak mempercayai total yang dikirim frontend.
+- Nominal yang dibuat untuk pembayaran harus sama dengan total order.
+
+Semua nilai disimpan sebagai integer rupiah.
+Format tampilan: Rp 72.600.
+
+## 11. State Produk
+
+### Pembayaran
+- pending
+- checking
+- paid
+- failed
+- expired
+
+checking adalah state UI saat pemeriksaan berlangsung.
+paid hanya ditetapkan berdasarkan verifikasi yang sah.
+
+### Penyiapan
+- received
+- preparing
+- ready
+- completed
+
+Status pembayaran dan status penyiapan disimpan terpisah.
+Paid tidak berarti makanan sudah selesai.
+
+### State UI umum
+- loading
+- empty
+- error
+- success
+- disabled
+
+## 12. Kebutuhan Nonfungsional
+
+### Responsive
+- Mengikuti desain desktop 1440 px.
+- Tetap dapat digunakan pada tablet dan mobile.
+- Tidak ada horizontal overflow pada 360 dan 390 px.
+- Form dan ringkasan tersusun satu kolom pada layar sempit.
+
+### Aksesibilitas
+- Semantic HTML.
+- Satu H1 per halaman.
+- Keyboard navigation dan focus ring.
+- Label input yang eksplisit.
+- Radio/checkbox native atau implementasi accessible.
+- Status tidak bergantung pada warna saja.
+- Touch target sekitar 44 × 44 px.
+
+### Keandalan
+- Pencegahan double submit di UI.
+- Idempotency pembuatan order/pembayaran di backend produksi.
+- Timer dihitung dari expiresAt, bukan direset setiap refresh.
+- Pesan error memberi langkah pemulihan.
+
+### Keamanan
+- Tidak meminta PIN, OTP, atau password bank.
+- Tidak menampilkan QR transaksi produksi dari data hardcode.
+- Tidak menganggap return URL atau klik tombol sebagai bukti pembayaran.
+- Verifikasi pembayaran dilakukan backend.
+- Rahasia gateway hanya berada di server.
+- Identitas order dan akses statusnya harus divalidasi backend.
+
+### Performa
+- Optimalkan ukuran media.
+- Lazy-load gambar di bawah fold.
+- Hindari dependency besar yang tidak diperlukan.
+- Klaim pemasaran "kurang dari satu detik" tidak dianggap hasil benchmark.
+- Target performa final ditetapkan berdasarkan pengujian.
+
+## 13. Kebutuhan Integrasi
+
+Kontrak API belum tersedia.
+
+Backend produksi perlu mendukung:
+- Resolusi/validasi konteks QR meja.
+- Pengambilan katalog dan opsi produk.
+- Validasi promo bila tersedia.
+- Pembuatan order.
+- Perhitungan total authoritative.
+- Pembuatan transaksi pembayaran.
+- Pengambilan status pembayaran.
+- Webhook gateway terverifikasi.
+- Pengambilan status penyiapan pesanan.
+
+Untuk demo:
+- Gunakan adapter mock terpisah.
+- Beri label Mode Demo.
+- Sediakan simulasi pending, paid, failed, dan expired yang eksplisit.
+- Jangan melakukan transaksi nyata.
+
+## 14. Analytics yang Disarankan
+
+Event:
+- landing_viewed
+- menu_detail_viewed
+- item_configured
+- item_added
+- checkout_started
+- order_created
+- payment_method_selected
+- payment_check_requested
+- payment_verified
+- payment_expired
+- order_status_viewed
+
+Jangan mengirim catatan pelanggan, token rahasia, atau data pembayaran sensitif.
+Implementasi analytics mengikuti kebijakan privasi yang dikonfirmasi.
+
+## 15. Risiko dan Keputusan Terbuka
+
+- Foto final belum dikonfirmasi.
+- Payload QR pembayaran belum tersedia.
+- Gateway dan kontrak backend belum ditentukan.
+- Kebijakan promo belum tersedia.
+- Pengantaran ke alamat belum memiliki desain lengkap.
+- Konfirmasi pembayaran manual belum memiliki workflow resmi.
+- Tujuan link bantuan/mitra/legal belum dikonfirmasi.
+- Desain mobile belum tersedia.
+- Landing menyebut kartu kredit, tetapi layar pembayaran tidak memiliki metode itu.
+- Waktu pada screenshot adalah snapshot dan tidak sepenuhnya berurutan.
+- Multi-item/multi-merchant checkout belum dispesifikasikan.
+
+Jangan diam-diam mengarang keputusan untuk kebutuhan produksi.
+Untuk demo, dokumentasikan asumsi dan batasi scope.
+
+## 16. Definition of Done
+
+- Lima halaman lengkap tersedia.
+- Visual mengikuti design.md dan screenshot.
+- Font dan warna sesuai referensi.
+- Konfigurasi dan harga konsisten antarhalaman.
+- Total awal Rp 72.600.
+- Validasi quantity dan catatan berfungsi.
+- Tidak ada order ganda akibat double click.
+- State loading/error/empty/expired tersedia.
+- Mode Demo jelas jika backend belum tersedia.
+- Konfirmasi tidak melewati verifikasi pembayaran produksi.
+- Mobile 360/390 px dapat digunakan.
+- Keyboard navigation dan label form tersedia.
+- Pengujian harga, konfigurasi, dan alur utama lulus.
+- Pemeriksaan TypeScript/lint/build yang tersedia lulus.
+- Aset dan integrasi yang belum tersedia dilaporkan.

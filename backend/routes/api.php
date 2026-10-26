@@ -29,8 +29,8 @@ use App\Http\Controllers\ChatbotController;
 */
 
 // =============================================
- // Dokumentasi API (Swagger UI, publik)
- // =============================================
+// Dokumentasi API (Swagger UI, publik)
+// =============================================
 Route::get('/docs', [ApiDocsController::class, 'index']);
 Route::get('/docs.yaml', [ApiDocsController::class, 'yaml']);
 Route::get('/docs.json', [ApiDocsController::class, 'json']);

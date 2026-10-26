@@ -1,0 +1,126 @@
+/* ==========================================================================
+   PRINT STYLES FOR RECEIPT / STRUK PEMBAYARAN
+   ========================================================================== */
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #receipt-printable-area, #receipt-printable-area * {
+    visibility: visible;
+  }
+
+  #receipt-printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0 auto;
+    padding: 10mm 4mm;
+    background: #ffffff;
+    color: #000000;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Receipt Screen View Preview */
+.receipt-wrapper {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.4;
+  background-color: var(--color-canvas);
+  border: 1px dashed var(--color-hairline);
+  padding: var(--spacing-lg);
+  border-radius: var(--rounded-md);
+  color: var(--color-ink);
+}
+
+.receipt-header {
+  text-align: center;
+  border-bottom: 1px dashed #000000;
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.receipt-store-title {
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.receipt-store-sub {
+  font-size: 11px;
+  color: #555555;
+  margin-top: 2px;
+}
+
+.receipt-meta-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-bottom: 1px dashed #000000;
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  font-size: 11px;
+}
+
+.receipt-meta-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.receipt-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--spacing-sm);
+  font-size: 11px;
+}
+
+.receipt-items-table th {
+  text-align: left;
+  border-bottom: 1px dashed #000000;
+  padding-bottom: 4px;
+}
+
+.receipt-items-table td {
+  padding: 4px 0;
+  vertical-align: top;
+}
+
+.receipt-totals {
+  border-top: 1px dashed #000000;
+  padding-top: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.receipt-totals-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.receipt-totals-row.grand-total {
+  font-size: 13px;
+  font-weight: 700;
+  border-top: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  padding: 4px 0;
+  margin: 4px 0;
+}
+
+.receipt-footer {
+  text-align: center;
+  border-top: 1px dashed #000000;
+  padding-top: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  font-size: 10px;
+}

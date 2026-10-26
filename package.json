@@ -1,0 +1,11 @@
+{
+  "name": "mejaku-project",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Workspace runner untuk MejaKu (Laravel Backend & Vue Frontend)",
+  "scripts": {
+    "dev": "npx concurrently -k -n \"backend,frontend\" -c \"cyan,magenta\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && php artisan serve",
+    "dev:frontend": "npm --prefix FE/dashboard-vue run dev"
+  }
+}

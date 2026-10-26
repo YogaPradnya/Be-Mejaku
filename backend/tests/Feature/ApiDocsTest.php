@@ -13,7 +13,7 @@ class ApiDocsTest extends TestCase
     {
         $this->get('/api/docs')
             ->assertStatus(200)
-            ->assertSee('swagger-ui', false);
+            ->assertSee('api-reference', false);
     }
 
     public function test_docs_yaml_valid(): void
@@ -26,7 +26,7 @@ class ApiDocsTest extends TestCase
     public function test_docs_json_meringkas_path(): void
     {
         $res = $this->getJson('/api/docs.json')->assertStatus(200);
-        $this->assertTrue($res->json('success'));
-        $this->assertGreaterThanOrEqual(30, $res->json('data.paths'));
+        $this->assertSame('3.0.3', $res->json('openapi'));
+        $this->assertGreaterThanOrEqual(30, count($res->json('paths') ?? []));
     }
 }

@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Toko - Sistem Penjualan & Kasir</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/print.css">
+  <style>[v-cloak] { display: none; }</style>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- QRCode.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Vue 3 CDN (global build, tanpa build-step) -->
+  <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
+</head>
+<body>
+  <div class="app-container" id="app" v-cloak>
+    <!-- BACKDROP UNTUK SIDEBAR DI MOBILE/TABLET -->
+    <div class="sidebar-backdrop" :class="{ active: sidebarOpen }" @click="sidebarOpen = false"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" :class="{ open: sidebarOpen, collapsed: sidebarCollapsed }">
+      <div class="sidebar-header">
+        <div class="brand-mark">M</div>
+        <div class="brand-text">
+          <div class="brand-title">Merchants</div>
+          <div class="font-caption" style="color: #71717a;">Store System</div>
+        </div>
+        <button class="btn-icon sidebar-close-btn" aria-label="Tutup Sidebar" @click="sidebarOpen = false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Menu Utama</div>
+        <a href="#overview" class="nav-item" :class="{ active: page === 'overview' }" @click.prevent="go('overview')">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </span>
+          <span class="nav-text">Ringkasan</span>
+        </a>
+        <a href="#orders" class="nav-item" :class="{ active: page === 'orders' }" @click.prevent="go('orders')">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          </span>
+          <span class="nav-text">Pesanan</span>
+        </a>
+        <a href="#stock" class="nav-item" :class="{ active: page === 'stock' }" @click.prevent="go('stock')">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          </span>
+          <span class="nav-text">Stok Barang</span>
+        </a>
+        <a href="#menu-management" class="nav-item" :class="{ active: page === 'menu-management' }" @click.prevent="go('menu-management')">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </span>
+          <span class="nav-text">Kelola Menu</span>
+        </a>
+
+        <div class="nav-section-title" style="margin-top: 16px;">Transaksi</div>
+        <a href="#payments" class="nav-item" :class="{ active: page === 'payments' }" @click.prevent="go('payments')">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </span>
+          <span class="nav-text">Kasir & Pembayaran</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-avatar">{{ loggedIn ? 'ADM' : 'GST' }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ loggedIn ? 'Administrator' : 'Tamu (Lokal)' }}</div>
+          <div class="user-role">Kasir & Toko</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper" :class="{ expanded: sidebarCollapsed }">
+      <!-- TOP BAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="btn-icon" aria-label="Toggle Sidebar" title="Buka/Tutup Sidebar" @click="toggleSidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="topbar-page-breadcrumb">
+            <span class="font-mono breadcrumb-label" style="font-size: 11px; color: #71717a; text-transform: uppercase;">Halaman</span>
+            <span class="topbar-page-title">{{ pageTitle }}</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="topbar-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" v-model="globalSearch" placeholder="Cari di toko...">
+          </div>
+
+          <button type="button" class="btn-store-toggle" :class="storeStatus === 'OPEN' ? 'open' : 'closed'" @click="toggleStore" :title="storeStatus === 'OPEN' ? 'Status: Toko Buka (Klik untuk menutup toko)' : 'Status: Toko Tutup (Klik untuk membuka toko)'">
+            <span class="store-status-dot"></span>
+            <span>{{ storeStatus === 'OPEN' ? 'Toko Buka' : 'Toko Tutup' }}</span>
+          </button>
+
+          <span class="badge" :class="apiBadgeClass" title="Status koneksi ke Backend API">
+            <span class="badge-dot"></span>
+            <span>{{ apiBadgeText }}</span>
+          </span>
+          <button type="button" class="btn btn-secondary btn-sm" @click="loggedIn ? doLogout() : (loginModal = true)">{{ loggedIn ? 'Keluar' : 'Masuk' }}</button>
+        </div>
+      </header>
+
+      <!-- CONTENT AREA (PAGE VIEWS) -->
+      <main class="content-area">
+
+        <!-- PAGE 1: RINGKASAN (OVERVIEW) -->
+        <section class="page-view" :class="{ active: page === 'overview' }">
+          <div class="section-header">
+            <div>
+              <h1 class="section-title">Ringkasan Kinerja Toko</h1>
+            </div>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-card accent-lime">
+              <div class="metric-header">
+                <span class="metric-label">Total Pendapatan</span>
+                <span class="badge badge-success">+12.4%</span>
+              </div>
+              <div class="metric-value">{{ rupiah(metrics.revenue) }}</div>
+              <div class="metric-footer"><span>Dari pesanan lunas</span></div>
+            </div>
+
+            <div class="metric-card accent-lilac">
+              <div class="metric-header">
+                <span class="metric-label">Total Pesanan</span>
+                <span class="badge badge-info">+8.1%</span>
+              </div>
+              <div class="metric-value">{{ metrics.totalOrders }}</div>
+              <div class="metric-footer"><span>Seluruh transaksi tercatat</span></div>
+            </div>
+
+            <div class="metric-card accent-mint">
+              <div class="metric-header">
+                <span class="metric-label">Produk Terjual</span>
+                <span class="badge badge-success">+15.3%</span>
+              </div>
+              <div class="metric-value">{{ metrics.soldItems }} item</div>
+              <div class="metric-footer"><span>Unit item terjual</span></div>
+            </div>
+
+            <div class="metric-card accent-coral">
+              <div class="metric-header">
+                <span class="metric-label">Perlu Perhatian</span>
+                <span class="badge badge-warning">{{ metrics.lowStockCount }} item</span>
+              </div>
+              <div class="metric-value">{{ metrics.lowStockCount }}</div>
+              <div class="metric-footer"><span>Stok menipis (&le; 5 unit)</span></div>
+            </div>
+          </div>
+
+          <div class="charts-grid" style="margin-top: var(--spacing-xl);">
+            <div class="card chart-card">
+              <div class="section-header">
+                <div>
+                  <h2 class="font-card-title">Tren Penjualan</h2>
+                  <p class="section-subtitle">Grafik omset harian dan mingguan</p>
+                </div>
+                <div class="tab-group">
+                  <button class="tab-btn" :class="{ active: chartPeriod === 'weekly' }" @click="setChartPeriod('weekly')">Minggu Ini</button>
+                  <button class="tab-btn" :class="{ active: chartPeriod === 'monthly' }" @click="setChartPeriod('monthly')">Bulan Ini</button>
+                </div>
+              </div>
+              <div class="chart-container">
+                <canvas id="salesChart"></canvas>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="section-header">
+                <div>
+                  <h2 class="font-card-title">Produk Terlaris</h2>
+                  <p class="section-subtitle">Daftar item penjualan tertinggi</p>
+                </div>
+              </div>
+              <div class="top-products-list">
+                <div v-for="(prod, i) in topProducts" :key="i" class="product-row-item">
+                  <div class="product-meta">
+                    <span class="product-name">{{ prod.name }}</span>
+                    <span class="product-category">{{ prod.category }}</span>
+                  </div>
+                  <div class="product-sales">
+                    <span class="product-sold-qty">{{ prod.qty }} terjual</span>
+                    <span v-if="!prod.fromApi" class="product-sold-rev">{{ rupiah(prod.rev) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 2: PESANAN (ORDERS) -->
+        <section class="page-view" :class="{ active: page === 'orders' }">
+          <div class="section-header">
+            <div>
+              <h1 class="section-title">Daftar Pesanan</h1>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-toolbar">
+              <div class="tab-group">
+                <button class="tab-btn" :class="{ active: orderFilter === 'ALL' }" @click="orderFilter = 'ALL'">Semua</button>
+                <button class="tab-btn" :class="{ active: orderFilter === 'MENUNGGU' }" @click="orderFilter = 'MENUNGGU'">Menunggu</button>
+                <button class="tab-btn" :class="{ active: orderFilter === 'DIPROSES' }" @click="orderFilter = 'DIPROSES'">Diproses</button>
+                <button class="tab-btn" :class="{ active: orderFilter === 'LUNAS' }" @click="orderFilter = 'LUNAS'">Lunas</button>
+                <button class="tab-btn" :class="{ active: orderFilter === 'SELESAI' }" @click="orderFilter = 'SELESAI'">Selesai</button>
+              </div>
+
+              <div class="topbar-search table-search-input">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" v-model="orderSearch" placeholder="Cari nomor pesanan / nama...">
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>No. Pesanan</th>
+                    <th>Waktu</th>
+                    <th>Pelanggan</th>
+                    <th>Meja</th>
+                    <th>Rincian Pesanan</th>
+                    <th>Total Biaya</th>
+                    <th>Status</th>
+                    <th>Metode</th>
+                    <th style="text-align: right;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="filteredOrders.length === 0">
+                    <td colspan="9" style="text-align: center; padding: 28px; color: #71717a;">
+                      Tidak ada data pesanan yang cocok.
+                      <span v-if="apiOnline" class="font-caption">(sumber: API backend)</span>
+                    </td>
+                  </tr>
+                  <tr v-for="order in filteredOrders" :key="order.id">
+                    <td style="width: 95px;"><strong>{{ order.id }}</strong></td>
+                    <td class="font-mono" style="font-size: 12px; color: #555; width: 125px;">{{ order.date }}</td>
+                    <td style="max-width: 120px;" :title="order.customer"><span class="text-truncate">{{ order.customer }}</span></td>
+                    <td style="width: 110px;">
+                      <span class="badge badge-neutral">{{ order.tableCode }}{{ order.tableFloor ? ' • ' + order.tableFloor : '' }}</span>
+                    </td>
+                    <td style="max-width: 180px;" :title="order.itemsSummary"><span class="text-truncate">{{ order.itemsSummary }}</span></td>
+                    <td style="width: 120px;"><strong>{{ rupiah(order.total) }}</strong></td>
+                    <td style="width: 130px;">
+                      <template v-if="order.source === 'api'">
+                        <span class="badge" :class="prepBadge(order.prepStatus)" title="Status dapur">
+                          <span class="badge-dot"></span>
+                          {{ PREP_LABEL[order.prepStatus] || order.prepStatus }}
+                        </span>
+                        <span class="badge" :class="payBadge(order.payStatus)" title="Status pembayaran" style="margin-top: 4px;">
+                          <span class="badge-dot"></span>
+                          {{ PAY_LABEL[order.payStatus] || order.payStatus }}
+                        </span>
+                      </template>
+                      <template v-else>
+                        <span class="badge" :class="{ 'badge-success': order.status === 'LUNAS' || order.status === 'SELESAI', 'badge-info': order.status === 'DIPROSES', 'badge-warning': order.status === 'MENUNGGU', 'badge-neutral': !['LUNAS','SELESAI','DIPROSES','MENUNGGU'].includes(order.status) }">
+                          <span class="badge-dot"></span>
+                          {{ order.status }}
+                        </span>
+                      </template>
+                    </td>
+                    <td class="font-mono" style="font-size: 12px; width: 110px;">{{ order.method || '-' }}</td>
+                    <td class="col-action">
+                      <template v-if="order.source === 'api'">
+                        <button v-if="nextStep(order.prepStatus)" class="btn btn-primary btn-sm" @click="advancePrep(order)">{{ nextStep(order.prepStatus).label }}</button>
+                        <button v-if="order.payStatus === 'pending'" class="btn btn-secondary btn-sm" @click="markPaid(order)">Tandai Lunas</button>
+                        <button class="btn btn-secondary btn-sm" @click="openReceipt(order)">Struk</button>
+                      </template>
+                      <template v-else>
+                        <button v-if="order.status === 'MENUNGGU' || order.status === 'DIPROSES'" class="btn btn-primary btn-sm" @click="openPay(order)">Bayar</button>
+                        <button v-else class="btn btn-secondary btn-sm" @click="openReceipt(order)">Lihat Struk</button>
+                      </template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 3: STOK BARANG (STOCK) -->
+        <section class="page-view" :class="{ active: page === 'stock' }">
+          <div class="section-header">
+            <div>
+              <h1 class="section-title">Inventaris & Stok Gudang</h1>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-toolbar">
+              <div class="font-caption" style="color: #71717a;">
+                Total item terdaftar di sistem inventaris
+              </div>
+              <div class="topbar-search table-search-input">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" v-model="stockSearch" placeholder="Filter stok produk...">
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Kode Barang</th>
+                    <th>Nama Produk</th>
+                    <th>Kategori</th>
+                    <th>Sisa Unit</th>
+                    <th>Status Ketersediaan</th>
+                    <th>Kondisi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="filteredStock.length === 0">
+                    <td colspan="6" style="text-align: center; padding: 28px; color: #71717a;">Tidak ada barang yang cocok.</td>
+                  </tr>
+                  <tr v-for="prod in filteredStock" :key="prod.id">
+                    <td class="font-mono" style="font-size: 12px; width: 95px;">{{ prod.id }}</td>
+                    <td style="max-width: 180px;" :title="prod.name"><span class="text-truncate"><strong>{{ prod.name }}</strong></span></td>
+                    <td style="width: 110px;">{{ prod.category }}</td>
+                    <td style="width: 100px;"><strong>{{ prod.stock }}</strong> unit</td>
+                    <td style="width: 120px;">
+                      <span class="badge" :class="Number(prod.stock) <= 5 ? 'badge-danger' : 'badge-success'">
+                        <span class="badge-dot"></span>
+                        {{ Number(prod.stock) <= 5 ? 'Stok Kritis' : 'Stok Aman' }}
+                      </span>
+                    </td>
+                    <td class="font-mono" style="font-size: 12px; color: #71717a;">{{ Number(prod.stock) <= 5 ? 'Segera Restock' : 'Cukup' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 4: KELOLA MENU (MENU MANAGEMENT) -->
+        <section class="page-view" :class="{ active: page === 'menu-management' }">
+          <div class="section-header align-inline">
+            <h1 class="section-title">Manajemen Menu</h1>
+            <button class="btn btn-primary btn-sm" @click="menuModal = true">+ Tambah Menu</button>
+          </div>
+
+          <div class="card">
+            <div class="table-toolbar">
+              <div class="tab-group">
+                <button class="tab-btn" :class="{ active: menuFilter === 'ALL' }" @click="menuFilter = 'ALL'">Semua Kategori</button>
+                <button class="tab-btn" :class="{ active: menuFilter === 'Makanan' }" @click="menuFilter = 'Makanan'">Makanan</button>
+                <button class="tab-btn" :class="{ active: menuFilter === 'Minuman' }" @click="menuFilter = 'Minuman'">Minuman</button>
+                <button class="tab-btn" :class="{ active: menuFilter === 'Camilan' }" @click="menuFilter = 'Camilan'">Camilan</button>
+              </div>
+
+              <div class="topbar-search table-search-input">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" v-model="menuSearch" placeholder="Cari nama menu...">
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nama Menu</th>
+                    <th>Kategori</th>
+                    <th>Harga Satuan</th>
+                    <th>Jumlah Stok</th>
+                    <th>Rating</th>
+                    <th>Deskripsi</th>
+                    <th style="text-align: right;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="filteredProducts.length === 0">
+                    <td colspan="8" style="text-align: center; padding: 28px; color: #71717a;">Tidak ada menu yang ditemukan.</td>
+                  </tr>
+                  <tr v-for="prod in filteredProducts" :key="prod.id">
+                    <td class="font-mono" style="font-size: 12px; font-weight: 600; width: 85px;">{{ prod.id }}</td>
+                    <td style="max-width: 150px;" :title="prod.name"><span class="text-truncate"><strong>{{ prod.name }}</strong></span></td>
+                    <td style="width: 110px;"><span class="badge badge-neutral">{{ prod.category }}</span></td>
+                    <td style="width: 120px;"><strong>{{ rupiah(prod.price) }}</strong></td>
+                    <td style="width: 95px;">
+                      <span :class="Number(prod.stock) <= 5 ? 'badge badge-danger' : 'font-mono'">{{ prod.stock }} unit</span>
+                    </td>
+                    <td style="width: 100px;">
+                      <span style="color: #f59e0b; font-weight: 600;">★ {{ Number(prod.rating || 4.8).toFixed(1) }}</span>
+                      <span class="font-caption" style="color: #71717a; margin-left: 2px;">({{ prod.rating_count || 18 }})</span>
+                    </td>
+                    <td style="max-width: 180px;" :title="prod.description || '-'"><span class="text-truncate" style="color: #71717a; font-size: 13px;">{{ prod.description || '-' }}</span></td>
+                    <td class="col-action">
+                      <button class="btn btn-secondary btn-sm" style="color: var(--color-semantic-danger); border-color: rgba(220, 38, 38, 0.3);" @click="deleteMenu(prod.id, prod.name)">Hapus</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAGE 5: KASIR & PEMBAYARAN (PAYMENTS) -->
+        <section class="page-view" :class="{ active: page === 'payments' }">
+          <div class="section-header">
+            <div>
+              <h1 class="section-title">Kasir & Riwayat Pembayaran</h1>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom: var(--spacing-xl);">
+            <div class="section-header">
+              <div>
+                <h2 class="font-card-title">Pesanan Menunggu Pembayaran</h2>
+                <p class="section-subtitle">Transaksi aktif yang siap diproses dan dicetak struknya.</p>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>No. Pesanan</th>
+                    <th>Nama Pelanggan</th>
+                    <th>Jumlah Tagihan</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Tindakan Kasir</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="pendingOrders.length === 0">
+                    <td colspan="5" style="text-align: center; padding: 24px; color: #71717a;">Semua pesanan saat ini telah lunas.</td>
+                  </tr>
+                  <tr v-for="ord in pendingOrders" :key="ord.id">
+                    <td><strong>{{ ord.id }}</strong></td>
+                    <td>{{ ord.source === 'api' ? ('Meja ' + ord.tableCode) : ord.customer }}</td>
+                    <td><strong>{{ rupiah(ord.total) }}</strong></td>
+                    <td>
+                      <span v-if="ord.source === 'api'" class="badge" :class="prepBadge(ord.prepStatus)">
+                        <span class="badge-dot"></span>
+                        {{ PREP_LABEL[ord.prepStatus] || ord.prepStatus }}
+                      </span>
+                      <span v-else class="badge badge-warning">
+                        <span class="badge-dot"></span>
+                        {{ ord.status }}
+                      </span>
+                    </td>
+                    <td style="text-align: right;">
+                      <button v-if="ord.source === 'api'" class="btn btn-primary btn-sm" @click="markPaid(ord)">Tandai Lunas</button>
+                      <button v-else class="btn btn-primary btn-sm" @click="openPay(ord)">Proses Kasir</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-header">
+              <div>
+                <h2 class="font-card-title">Riwayat Transaksi Selesai</h2>
+                <p class="section-subtitle">Semua pembayaran yang telah lunas dan struk dapat dicetak ulang.</p>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>No. Pesanan</th>
+                    <th>Waktu Pembayaran</th>
+                    <th>Pelanggan</th>
+                    <th>Metode Pembayaran</th>
+                    <th>Nominal</th>
+                    <th style="text-align: right;">Struk</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="paidOrders.length === 0">
+                    <td colspan="6" style="text-align: center; padding: 24px; color: #71717a;">Belum ada riwayat transaksi lunas.</td>
+                  </tr>
+                  <tr v-for="ord in paidOrders" :key="ord.id">
+                    <td><strong>{{ ord.id }}</strong></td>
+                    <td class="font-mono" style="font-size: 12px; color: #555;">{{ ord.date }}</td>
+                    <td>{{ ord.source === 'api' ? ('Meja ' + ord.tableCode) : ord.customer }}</td>
+                    <td class="font-mono" style="font-size: 12px;">{{ ord.method || 'Kasir' }}</td>
+                    <td><strong>{{ rupiah(ord.total) }}</strong></td>
+                    <td style="text-align: right;">
+                      <button class="btn btn-secondary btn-sm" @click="openReceipt(ord)">Lihat Struk</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- MODAL: TAMBAH MENU BARU -->
+    <div class="modal-backdrop" v-show="menuModal" :class="{ active: menuModal }" @click.self="menuModal = false">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Tambah Menu Baru</h3>
+          <button class="modal-close-btn" @click="menuModal = false">&times;</button>
+        </div>
+        <form @submit.prevent="submitMenu">
+          <div class="form-group">
+            <label class="form-label" for="input-menu-name">Nama Menu / Produk</label>
+            <input type="text" id="input-menu-name" class="form-input" required v-model="menuForm.name" placeholder="Contoh: Kopi Susu Aren">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="input-menu-category">Kategori</label>
+            <select id="input-menu-category" class="form-select" required v-model="menuForm.category">
+              <option value="Makanan">Makanan</option>
+              <option value="Minuman">Minuman</option>
+              <option value="Camilan">Camilan</option>
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+            <div class="form-group">
+              <label class="form-label" for="input-menu-price">Harga (Rp)</label>
+              <input type="number" id="input-menu-price" class="form-input" required min="1000" step="500" v-model="menuForm.price" placeholder="18000">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="input-menu-stock">Stok Awal</label>
+              <input type="number" id="input-menu-stock" class="form-input" required min="0" v-model="menuForm.stock" placeholder="25">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="input-menu-desc">Deskripsi Singkat</label>
+            <textarea id="input-menu-desc" class="form-textarea" v-model="menuForm.description" placeholder="Rincian bahan, catatan rasa, atau deskripsi menu..."></textarea>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" @click="menuModal = false">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm">Simpan Menu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: PROSES PEMBAYARAN -->
+    <div class="modal-backdrop" v-show="payModal" :class="{ active: payModal }" @click.self="payModal = false">
+      <div class="modal-card" v-if="payOrder">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">Pembayaran Pesanan</h3>
+            <div class="font-caption" style="color: #71717a;">{{ payOrder.id }}</div>
+          </div>
+          <button class="modal-close-btn" @click="payModal = false">&times;</button>
+        </div>
+
+        <div class="card-soft" style="margin-bottom: var(--spacing-md); padding: var(--spacing-md);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="font-caption">Total Tagihan</span>
+            <span class="font-card-title">{{ rupiah(payOrder.total) }}</span>
+          </div>
+          <div class="font-body-sm" style="color: #555; margin-top: 4px;">Pelanggan: {{ payOrder.customer }}</div>
+        </div>
+
+        <div class="payment-tabs">
+          <button type="button" class="payment-tab-btn" :class="{ active: payMethod === 'qr' }" @click="payMethod = 'qr'; drawQr()">QR Code</button>
+          <button type="button" class="payment-tab-btn" :class="{ active: payMethod === 'transfer' }" @click="payMethod = 'transfer'">Transfer Bank</button>
+          <button type="button" class="payment-tab-btn" :class="{ active: payMethod === 'cash' }" @click="payMethod = 'cash'">Tunai / Offline</button>
+        </div>
+
+        <div v-show="payMethod === 'qr'" class="payment-content-panel" :class="{ active: payMethod === 'qr' }">
+          <div class="qr-display-box">
+            <div id="qrcode-container"></div>
+            <p class="font-caption" style="margin-top: 8px;">Pindai kode QR menggunakan aplikasi e-Wallet atau Mobile Banking</p>
+          </div>
+        </div>
+
+        <div v-show="payMethod === 'transfer'" class="payment-content-panel" :class="{ active: payMethod === 'transfer' }">
+          <div class="bank-info-box">
+            <div class="bank-info-row">
+              <span class="font-caption">Bank Tujuan:</span>
+              <strong>Bank Central Asia (BCA)</strong>
+            </div>
+            <div class="bank-info-row">
+              <span class="font-caption">Nomor Rekening:</span>
+            </div>
+            <div class="bank-acc-number">8820 1928 3341</div>
+            <div class="bank-info-row">
+              <span class="font-caption">Atas Nama:</span>
+              <span>PT MERCHANTS DIGITAL INDONESIA</span>
+            </div>
+          </div>
+          <p class="font-caption" style="color: #71717a;">Pastikan nominal transfer sesuai dengan total tagihan pesanan.</p>
+        </div>
+
+        <div v-show="payMethod === 'cash'" class="payment-content-panel" :class="{ active: payMethod === 'cash' }">
+          <div class="cash-calc-box">
+            <div class="form-group" style="margin-bottom: var(--spacing-xs);">
+              <label class="form-label" for="cash-received-input">Uang Diterima (Rp)</label>
+              <input type="number" id="cash-received-input" class="form-input" v-model="cashReceived" placeholder="Masukkan jumlah uang tunai">
+            </div>
+            <div class="calc-change-row">
+              <span>Kembalian:</span>
+              <span v-if="cashChange >= 0" style="color: var(--color-semantic-success);">{{ rupiah(cashChange) }}</span>
+              <span v-else style="color: var(--color-semantic-danger);">Kurang {{ rupiah(Math.abs(cashChange)) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" @click="payModal = false">Batal</button>
+          <button type="button" class="btn btn-primary btn-sm" @click="confirmPay">Konfirmasi Pembayaran</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: PREVIEW & CETAK STRUK PEMBAYARAN -->
+    <div class="modal-backdrop" v-show="receiptModal" :class="{ active: receiptModal }" @click.self="receiptModal = false">
+      <div class="modal-card" v-if="receiptOrder">
+        <div class="modal-header">
+          <h3 class="modal-title">Struk Transaksi</h3>
+          <button class="modal-close-btn" @click="receiptModal = false">&times;</button>
+        </div>
+
+        <div id="receipt-printable-area">
+          <div class="receipt-wrapper">
+            <div class="receipt-header">
+              <div class="receipt-store-title">MERCHANTS STORE</div>
+              <div class="receipt-store-sub">Jl. Perintis Kemerdekaan No. 42</div>
+              <div class="receipt-store-sub">Telp: 0812-3456-7890</div>
+            </div>
+
+            <div class="receipt-meta-grid">
+              <div class="receipt-meta-row">
+                <span>No. Faktur:</span>
+                <strong>{{ receiptOrder.id }}</strong>
+              </div>
+              <div class="receipt-meta-row">
+                <span>Waktu:</span>
+                <span>{{ receiptOrder.date || '-' }}</span>
+              </div>
+              <div class="receipt-meta-row">
+                <span>Pelanggan:</span>
+                <span>{{ receiptOrder.customer }}</span>
+              </div>
+              <div class="receipt-meta-row">
+                <span>Metode:</span>
+                <span>{{ receiptOrder.method || '-' }}</span>
+              </div>
+            </div>
+
+            <table class="receipt-items-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th style="text-align: center;">Qty</th>
+                  <th style="text-align: right;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, i) in (receiptOrder.items || [])" :key="i">
+                  <td>{{ item.name }}</td>
+                  <td style="text-align: center;">{{ item.qty }}x</td>
+                  <td style="text-align: right;">{{ rupiah(item.price * item.qty) }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="receipt-totals">
+              <div class="receipt-totals-row">
+                <span>Subtotal:</span>
+                <span>{{ rupiah(receiptOrder.total) }}</span>
+              </div>
+              <div class="receipt-totals-row">
+                <span>Pajak (0%):</span>
+                <span>Rp 0</span>
+              </div>
+              <div class="receipt-totals-row grand-total">
+                <span>TOTAL:</span>
+                <span>{{ rupiah(receiptOrder.total) }}</span>
+              </div>
+              <div v-if="receiptOrder.paidAmount > 0" class="receipt-totals-row">
+                <span>Bayar Tunai:</span>
+                <span>{{ rupiah(receiptOrder.paidAmount) }}</span>
+              </div>
+              <div v-if="receiptOrder.paidAmount > 0" class="receipt-totals-row">
+                <span>Kembalian:</span>
+                <span>{{ rupiah(receiptOrder.changeAmount || 0) }}</span>
+              </div>
+            </div>
+
+            <div class="receipt-footer">
+              <div>Terima kasih atas kunjungan Anda!</div>
+              <div>Barang yang dibeli tidak dapat ditukar</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" @click="receiptModal = false">Tutup</button>
+          <button type="button" class="btn btn-primary btn-sm" @click="printReceipt">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Cetak Struk
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: LOGIN ADMIN -->
+    <div class="modal-backdrop" v-show="loginModal" :class="{ active: loginModal }" @click.self="loginModal = false">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title">Masuk Dashboard</h3>
+            <div class="font-caption" style="color: #71717a;">Gunakan akun admin backend (ENV: ADMIN_EMAIL)</div>
+          </div>
+          <button class="modal-close-btn" @click="loginModal = false">&times;</button>
+        </div>
+        <form @submit.prevent="doLogin">
+          <div class="form-group">
+            <label class="form-label" for="input-login-email">Email</label>
+            <input type="email" id="input-login-email" class="form-input" required v-model="loginForm.email" placeholder="admin@mejaku.local" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-login-password">Password</label>
+            <input type="password" id="input-login-password" class="form-input" required v-model="loginForm.password" placeholder="••••••••" autocomplete="current-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-api-base">API Base URL</label>
+            <input type="text" id="input-api-base" class="form-input font-mono" style="font-size: 12px;" v-model="loginForm.base" placeholder="http://localhost:8000/api">
+          </div>
+          <div v-if="loginError" class="font-caption" style="color: var(--color-semantic-danger); margin-bottom: var(--spacing-sm);">{{ loginError }}</div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" @click="loginModal = false">Batal</button>
+            <button type="submit" class="btn btn-primary btn-sm" :disabled="loginBusy">Masuk</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC SCRIPTS -->
+  <script src="js/api.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
