@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ApiDocsController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\TableController;
 use App\Http\Controllers\OrderController;
@@ -26,6 +27,13 @@ use App\Http\Controllers\ChatbotController;
 | Semua route menggunakan prefix /api secara otomatis.
 |
 */
+
+// =============================================
+ // Dokumentasi API (Swagger UI, publik)
+ // =============================================
+Route::get('/docs', [ApiDocsController::class, 'index']);
+Route::get('/docs.yaml', [ApiDocsController::class, 'yaml']);
+Route::get('/docs.json', [ApiDocsController::class, 'json']);
 
 // =============================================
 // Menu & Katalog (rate limit: api default)
